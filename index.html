@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Crime Challenge</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font (best practice for Tailwind projects) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Load Tone.js for sound effects -->
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.71/build/Tone.min.js"></script>
+    <style>
+        /* Custom CSS for the Cyber/Neon theme */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Neon Glow Effect for Timer */
+        .neon-glow-red {
+            text-shadow: 0 0 5px #f87171, 0 0 10px #ef4444;
+        }
+        .neon-glow-blue {
+            text-shadow: 0 0 5px #bfdbfe, 0 0 10px #60a5fa;
+        }
+
+        /* Responsive Grid for Options */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 640px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- Main Game Container -->
+    <div id="game-container" class="w-full max-w-xl bg-gray-800 p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-700 transition-all duration-300">
+        <h1 class="text-3xl font-extrabold text-cyan-400 mb-6 text-center tracking-wider neon-glow-blue">
+            Cyber Crime Challenge
+        </h1>
+
+        <!-- Header: Timer Only -->
+        <div id="game-stats" class="flex justify-end items-center mb-6 text-xl">
+            <!-- Score section removed -->
+            <div class="text-white">
+                Time Left: <span id="timer-display" class="font-bold text-red-400 neon-glow-red">15</span>s
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div id="question-area" class="bg-gray-700 p-5 rounded-lg mb-6 shadow-inner min-h-[100px] flex items-center justify-center relative">
+            <p id="question-text" class="text-white text-lg text-center font-medium">Press Start to begin the challenge!</p>
+        </div>
+
+        <!-- Options Buttons -->
+        <div id="options-container" class="options-grid">
+            <!-- Buttons will be generated here -->
+        </div>
+
+        <!-- Game Control / Message Area -->
+        <div class="mt-8 text-center">
+            <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-150 ease-in-out transform hover:scale-105">
+                Start Challenge
+            </button>
+            <p id="game-message" class="text-red-400 mt-4 font-semibold hidden"></p>
+        </div>
+    </div>
+
+    <script>
+        // --- Game Data (15 Questions Simplified for Foundational Study) ---
+        const questions = [
+            // Unit I: Introduction to Security
+            {
+                q: "What is the art of hiding a secret message inside an ordinary non-secret file, like an image or audio file?",
+                options: ["Encryption", "Steganography", "Hiding", "Encoding"],
+                answer: "Steganography"
+            },
+            {
+                q: "What is the study of breaking codes and ciphers without knowing the secret key?",
+                options: ["Cryptography", "Cryptanalysis", "Hashing", "Verification"],
+                answer: "Cryptanalysis"
+            },
+            {
+                q: "An attempt to harm or compromise a system's security (like unauthorized access) is called a:",
+                options: ["Security Service", "Security Mechanism", "Security Attack", "Security Audit"],
+                answer: "Security Attack"
+            },
+            // Unit II: Symmetric Ciphers
+            {
+                q: "Which type of cipher uses only **one secret key** for both locking and unlocking data?",
+                options: ["Public Key Cipher", "Asymmetric Cipher", "Symmetric Cipher", "Digital Signature"],
+                answer: "Symmetric Cipher"
+            },
+            {
+                q: "What is a cipher that encrypts data in fixed-size groups (or chunks)?",
+                options: ["Stream Cipher", "Transposition Cipher", "Block Cipher", "Shift Cipher"],
+                answer: "Block Cipher"
+            },
+            // Unit III: Asymmetric Cryptography
+            {
+                q: "Which cryptography uses two different keys: a **public key** for encryption and a **private key** for decryption?",
+                options: ["Symmetric", "Stream", "Hybrid", "Asymmetric"],
+                answer: "Asymmetric"
+            },
+            {
+                q: "The security of the RSA algorithm depends on the difficulty of finding the factors of a very large:",
+                options: ["Random String", "Prime Number", "Public Key", "Digital Certificate"],
+                answer: "Prime Number"
+            },
+            // Unit IV: Integrity and Authentication Algorithms
+            {
+                q: "What cryptographic tool is used to check if a file has been changed or **tampered with** (data integrity)?",
+                options: ["Encryption Key", "Hash Function", "Digital Certificate", "VPN"],
+                answer: "Hash Function"
+            },
+            {
+                q: "What is the process of proving that you are who you say you are (e.g., entering a username and password)?",
+                options: ["Encryption", "Authorization", "Hashing", "Authentication"],
+                answer: "Authentication"
+            },
+            {
+                q: "What confirms the sender's identity and proves a digital document hasn't been changed (non-repudiation)?",
+                options: ["Access Control List", "Digital Signature", "Firewall Log", "VPN Tunnel"],
+                answer: "Digital Signature"
+            },
+            // Unit V: Cyber Crimes and Cyber Security
+            {
+                q: "A malicious program that **locks your files** and demands money (a ransom) to unlock them is called?",
+                options: ["Spyware", "Trojan Horse", "Ransomware", "Adware"],
+                answer: "Ransomware"
+            },
+            {
+                q: "What is it called when criminals send **fake emails** that look legitimate to steal your sensitive information?",
+                options: ["Smishing", "Phishing", "Denial-of-Service", "Spoofing"],
+                answer: "Phishing"
+            },
+            {
+                q: "A hidden program that secretly records everything you **type on your keyboard** is a:",
+                options: ["Keylogger", "Rootkit", "Debugger", "Antivirus"],
+                answer: "Keylogger"
+            },
+            {
+                q: "What attack uses special code inserted into a website input field to illegally access its **database**?",
+                options: ["Buffer Overflow", "Denial-of-Service", "SQL Injection", "Cross-Site Scripting"],
+                answer: "SQL Injection"
+            },
+            {
+                q: "Which security tool acts as a **barrier** between your internal computer network and the public internet?",
+                options: ["Router", "Firewall", "Switch", "Modem"],
+                answer: "Firewall"
+            }
+        ];
+
+        // --- Game State Variables ---
+        let currentQuestions = []; // Shuffled list
+        let currentQuestionIndex = 0;
+        // let score = 0; // Removed score variable
+        let timeLeft = 15; // Timer set to 15 seconds
+        let timerInterval;
+        let gameActive = false;
+        let hasAnswered = false;
+        let correctCount = 0; // New variable to track correct answers
+
+        // --- DOM Elements ---
+        // const scoreDisplay = document.getElementById('score-display'); // Removed
+        const timerDisplay = document.getElementById('timer-display');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const startButton = document.getElementById('start-button');
+        const gameMessage = document.getElementById('game-message');
+        const questionArea = document.getElementById('question-area');
+
+        // --- Sound Setup (Tone.js) ---
+        // A simple synth for correct answers (clean sine wave)
+        const correctSynth = new Tone.Synth({
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0.1, release: 0.2 }
+        }).toDestination();
+
+        // A simple synth for wrong answers (dissonant square wave)
+        const wrongSynth = new Tone.Synth({
+            oscillator: { type: 'square' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0.1, release: 0.2 }
+        }).toDestination();
+
+        /**
+         * Plays the sound effect for a correct answer.
+         */
+        const playCorrectSound = async () => {
+            await Tone.start();
+            correctSynth.triggerAttackRelease("G4", "8n");
+            setTimeout(() => correctSynth.triggerAttackRelease("C5", "8n"), 100);
+        };
+
+        /**
+         * Plays the sound effect for a wrong answer.
+         */
+        const playWrongSound = async () => {
+            await Tone.start();
+            wrongSynth.triggerAttackRelease("C3", "8n");
+            setTimeout(() => wrongSynth.triggerAttackRelease("B2", "8n"), 100);
+        };
+
+        /**
+         * Fisher-Yates shuffle algorithm.
+         * @param {Array} array - The array to shuffle.
+         * @returns {Array} The shuffled array.
+         */
+        const shuffleArray = (array) => {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        };
+
+        /**
+         * Resets and starts the timer.
+         */
+        const startTimer = () => {
+            clearInterval(timerInterval);
+            timeLeft = 15; // Timer set to 15 seconds
+            timerDisplay.textContent = timeLeft;
+            timerDisplay.classList.remove('text-yellow-400', 'text-red-600');
+            timerDisplay.classList.add('text-red-400');
+            timerDisplay.classList.add('neon-glow-red');
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 7) { // Warning color starts at 7 seconds left
+                    // Change color to yellow/orange for warning
+                    timerDisplay.classList.remove('text-red-400', 'neon-glow-red');
+                    timerDisplay.classList.add('text-yellow-400');
+                }
+                if (timeLeft <= 0) {
+                    handleTimeUp();
+                }
+            }, 1000);
+        };
+
+        /**
+         * Handles the case when the timer reaches zero.
+         */
+        const handleTimeUp = () => {
+            clearInterval(timerInterval);
+            if (gameActive) {
+                // Play a generic 'time up' sound (using wrong sound)
+                playWrongSound();
+                gameMessage.textContent = "Time's up! Moving to the next question...";
+                gameMessage.classList.remove('hidden');
+
+                // Highlight the correct answer for the user to see
+                const correctAnswer = currentQuestions[currentQuestionIndex].answer;
+                Array.from(optionsContainer.children).forEach(button => {
+                    if (button.textContent === correctAnswer) {
+                        button.classList.remove('bg-gray-600', 'hover:bg-gray-500');
+                        button.classList.add('bg-green-600', 'border-green-400', 'shadow-green-500/50');
+                    }
+                    button.disabled = true;
+                });
+
+                // Move to next question after a brief delay
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1500);
+            }
+        };
+
+
+        /**
+         * Displays the current question and its options.
+         */
+        const loadQuestion = () => {
+            if (currentQuestionIndex >= currentQuestions.length) {
+                gameOver();
+                return;
+            }
+
+            hasAnswered = false;
+            gameMessage.classList.add('hidden');
+            const q = currentQuestions[currentQuestionIndex];
+            questionText.textContent = `Question ${currentQuestionIndex + 1} of ${currentQuestions.length}: ${q.q}`;
+            optionsContainer.innerHTML = ''; // Clear previous options
+
+            startTimer(); // Start timer for the new question
+
+            // Create buttons for each option
+            q.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = 'bg-gray-600 text-white font-medium p-3 rounded-lg border-2 border-gray-500 shadow-md transition duration-200 ease-in-out transform hover:scale-[1.02] hover:bg-gray-500 focus:outline-none';
+                button.onclick = () => checkAnswer(button, option);
+                optionsContainer.appendChild(button);
+            });
+        };
+
+        // Removed showScorePopup function
+
+        /**
+         * Checks the user's selected answer.
+         * @param {HTMLButtonElement} clickedButton - The button element that was clicked.
+         * @param {string} selectedOption - The text of the selected option.
+         */
+        const checkAnswer = (clickedButton, selectedOption) => {
+            if (hasAnswered) return; // Lock answer after first click
+            hasAnswered = true;
+
+            clearInterval(timerInterval); // Stop the timer
+
+            const currentQuestion = currentQuestions[currentQuestionIndex];
+            const correctAnswer = currentQuestion.answer;
+            const isCorrect = selectedOption === correctAnswer;
+
+            // --- Visual Feedback ---
+            if (isCorrect) {
+                correctCount++; // Increment correct answers count
+                playCorrectSound();
+                gameMessage.textContent = "Correct! Moving on...";
+                gameMessage.classList.add('text-green-400');
+                gameMessage.classList.remove('text-red-400', 'hidden');
+
+                clickedButton.classList.remove('bg-gray-600', 'hover:bg-gray-500');
+                clickedButton.classList.add('bg-green-600', 'border-green-400', 'shadow-green-500/50');
+            } else {
+                playWrongSound();
+                gameMessage.textContent = `Incorrect! The correct answer was: ${correctAnswer}`;
+                gameMessage.classList.add('text-red-400');
+                gameMessage.classList.remove('text-green-400', 'hidden');
+
+                // Highlight the incorrect selection
+                clickedButton.classList.remove('bg-gray-600', 'hover:bg-gray-500');
+                clickedButton.classList.add('bg-red-600', 'border-red-400', 'shadow-red-500/50');
+
+                // Highlight the correct answer
+                Array.from(optionsContainer.children).forEach(button => {
+                    if (button.textContent === correctAnswer) {
+                        button.classList.remove('bg-gray-600', 'hover:bg-gray-500');
+                        button.classList.add('bg-green-600', 'border-green-400', 'shadow-green-500/50');
+                    }
+                });
+            }
+
+            // Disable all buttons to prevent changing the answer
+            Array.from(optionsContainer.children).forEach(button => button.disabled = true);
+
+            // Move to the next question after a short delay for feedback
+            setTimeout(() => {
+                nextQuestion();
+            }, isCorrect ? 800 : 2000);
+        };
+
+        /**
+         * Proceeds to the next question or ends the game.
+         */
+        const nextQuestion = () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentQuestions.length) {
+                loadQuestion();
+            } else {
+                gameOver();
+            }
+        };
+
+        /**
+         * Ends the game and displays the final result.
+         */
+        const gameOver = () => {
+            clearInterval(timerInterval);
+            gameActive = false;
+            optionsContainer.innerHTML = '';
+            
+            questionText.textContent = `Quiz Complete! You correctly answered ${correctCount} out of ${currentQuestions.length} questions.`;
+
+            startButton.textContent = 'Play Again';
+            startButton.classList.remove('hidden');
+            gameMessage.classList.add('hidden');
+            timerDisplay.textContent = '--';
+            timerDisplay.classList.remove('neon-glow-red', 'text-yellow-400');
+            timerDisplay.classList.add('text-red-400');
+        };
+
+        /**
+         * Initializes and starts a new game.
+         */
+        const initGame = () => {
+            // score = 0; // Removed score reset
+            correctCount = 0; // Reset correct count
+            currentQuestionIndex = 0;
+            gameActive = true;
+            // scoreDisplay.textContent = score; // Removed score display update
+            startButton.classList.add('hidden');
+            gameMessage.classList.add('hidden');
+            
+            // Random questions each time
+            currentQuestions = shuffleArray(questions);
+
+            loadQuestion();
+        };
+
+        // --- Event Listener ---
+        startButton.addEventListener('click', initGame);
+
+        // Initialize display state
+        window.onload = () => {
+            timerDisplay.textContent = '--';
+        }
+
+    </script>
+</body>
+</html>
